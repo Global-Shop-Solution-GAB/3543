@@ -1,0 +1,1030 @@
+Program.Sub.ScreenSU.Start
+gui.SS_Form1..create
+gui.SS_Form1..caption("Update Job")
+gui.SS_Form1..size(4245,3165)
+gui.SS_Form1..minx(0)
+gui.SS_Form1..miny(0)
+gui.SS_Form1..position(0,0)
+gui.SS_Form1..event(unload,ss_form1_unload)
+gui.SS_Form1..alwaysontop(True)
+gui.SS_Form1..fontname("Arial")
+gui.SS_Form1..fontsize(8)
+gui.SS_Form1..forecolor(0)
+gui.SS_Form1..fontstyle(,,,,)
+gui.SS_Form1..BackColor(-2147483633)
+gui.SS_Form1..controlbox(True)
+gui.SS_Form1..maxbutton(False)
+gui.SS_Form1..minbutton(False)
+gui.SS_Form1..mousepointer(0)
+gui.SS_Form1..moveable(True)
+gui.SS_Form1..sizeable(False)
+gui.SS_Form1..ShowInTaskBar(True)
+gui.SS_Form1..titlebar(True)
+gui.SS_Form1.lbl_txtGrossWeight.create(label,"Gross Weight",True,1800,200,1,100,585,True,0,Arial,8,-2147483633,0)
+gui.SS_Form1.lbl_txtGrossWeight.defaultvalue("")
+gui.SS_Form1.lbl_txtGrossWeight.controlgroup(0)
+gui.SS_Form1.txtGrossWeight.create(textbox,"",True,3690,405,0,100,815,True,0,Arial,8,16777215,1)
+gui.SS_Form1.txtGrossWeight.event(change,txtgrossweight_change)
+gui.SS_Form1.txtGrossWeight.numericonly(0)
+gui.SS_Form1.txtGrossWeight.tooltip("Input Gross Weight Value. Then you can either hit the Enter key on keyboard or click the Process button.")
+gui.SS_Form1.txtGrossWeight.event(keypressenter,txtgrossweight_keypressenter)
+gui.SS_Form1.txtGrossWeight.maxLength(5)
+gui.SS_Form1.txtGrossWeight.defaultvalue("")
+gui.SS_Form1.txtGrossWeight.controlgroup(0)
+gui.SS_Form1.cmdProcess.create(button)
+gui.SS_Form1.cmdProcess.caption("Process")
+gui.SS_Form1.cmdProcess.visible(True)
+gui.SS_Form1.cmdProcess.size(1780,510)
+gui.SS_Form1.cmdProcess.zorder(0)
+gui.SS_Form1.cmdProcess.position(100,1355)
+gui.SS_Form1.cmdProcess.enabled(True)
+gui.SS_Form1.cmdProcess.fontname("Arial")
+gui.SS_Form1.cmdProcess.fontsize(8)
+gui.SS_Form1.cmdProcess.event(click,cmdprocess_click)
+gui.SS_Form1.cmdProcess.tooltip("This will process a WIP To FG transaction.")
+gui.SS_Form1.cmdProcess.defaultvalue("")
+gui.SS_Form1.cmdProcess.controlgroup(0)
+gui.SS_Form1.cmdRLastBale.create(button)
+gui.SS_Form1.cmdRLastBale.caption("Reverse Last Bale")
+gui.SS_Form1.cmdRLastBale.visible(True)
+gui.SS_Form1.cmdRLastBale.size(1780,510)
+gui.SS_Form1.cmdRLastBale.zorder(0)
+gui.SS_Form1.cmdRLastBale.position(2040,1340)
+gui.SS_Form1.cmdRLastBale.enabled(False)
+gui.SS_Form1.cmdRLastBale.fontname("Arial")
+gui.SS_Form1.cmdRLastBale.fontsize(8)
+gui.SS_Form1.cmdRLastBale.event(click,cmdrlastbale_click)
+gui.SS_Form1.cmdRLastBale.tooltip("This will Reverse the Last Processed WIP to FG")
+gui.SS_Form1.cmdRLastBale.defaultvalue("")
+gui.SS_Form1.cmdRLastBale.controlgroup(0)
+gui.SS_Form1.lblJobSuffix.create(label,"",True,1575,255,1,155,200,True,0,Arial,8,-2147483633,0)
+gui.SS_Form1.lblJobSuffix.defaultvalue("")
+gui.SS_Form1.lblJobSuffix.controlgroup(0)
+gui.SS_Form1.lblSeq.create(label,"Label",True,1935,255,1,1925,200,True,0,Arial,8,-2147483633,0)
+gui.SS_Form1.lblSeq.defaultvalue("")
+gui.SS_Form1.lblSeq.controlgroup(0)
+gui.SS_Form1.cmdReprint.create(button)
+gui.SS_Form1.cmdReprint.caption("Reprint Last WIP Label")
+gui.SS_Form1.cmdReprint.visible(True)
+gui.SS_Form1.cmdReprint.size(1695,510)
+gui.SS_Form1.cmdReprint.zorder(0)
+gui.SS_Form1.cmdReprint.position(155,2000)
+gui.SS_Form1.cmdReprint.enabled(True)
+gui.SS_Form1.cmdReprint.fontname("Arial")
+gui.SS_Form1.cmdReprint.fontsize(8)
+gui.SS_Form1.cmdReprint.event(click,cmdreprint_click)
+gui.SS_Form1.cmdReprint.tooltip("This will reprint the last processed WIP to FG label")
+gui.SS_Form1.cmdReprint.defaultvalue("")
+gui.SS_Form1.cmdReprint.controlgroup(0)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+
+Variable.Global.sJob.Declare(String)
+Variable.Global.sSuffix.Declare(String)
+Variable.Global.sWC.Declare(String)
+Variable.Global.sPart.Declare(String)
+Variable.Global.fTareWeight.Declare(Float,0)
+Variable.UDT.uPrevLabel.Define("Part",String)
+Variable.UDT.uPrevLabel.Define("Lot",String)
+Variable.UDT.uPrevLabel.Define("Qty_On_Label",Float)
+Variable.UDT.uPrevLabel.Define("Qty_On_Label_KG",Float)
+Variable.UDT.uPrevLabel.Define("WO",String)
+Variable.UDT.uPrevLabel.Define("LBL_Create_Date",String)
+Variable.uGlobal.uPrevLabel.Declare("uPrevLabel")
+Variable.Global.bReprint.Declare(Boolean,False)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Main_Err")
+F.Intrinsic.Control.ClearErrors
+
+
+'Quote 5971-1
+'coded by TRT, using beta GABCE2.0
+'9/29/14
+'leigh fibers is the customer.
+
+'newest version had to make changes because they didn't like how it was quoted and the quote that they accepted
+'10/23/2014
+
+'10/31/14
+'using fun new core progrma to upload everything much cleaner,
+'asyn should be attached to hook,
+'keypressenter on the text box is functioning.
+'now showing wait dialogs instead of message boxes.
+
+'1/9/15
+'SKT
+'Made a change so the close flag is always N.  They decided they did not want this to close the job.
+
+'1/22/15
+'AGM
+'Added txtgrossweight_change subroutine, allowing GAB to read special characters and then close program if characters where entered.
+'Took off numeric restriction to textfield so that GAB could read '$' and '%' in order to close window
+'Restricted textfield to maximum character length of 4.
+
+F.Intrinsic.Debug.SetLA("Version 2.0 Date 10/31/14")
+
+V.Local.sError.Declare(String)
+V.local.sDSN.Declare(String)
+
+'F.ODBC.Connection!conX.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+F.Intrinsic.String.Concat("GLOBAL_",V.Caller.CompanyCode,V.Local.sDSN)
+F.ODBC.Connection!conX.OpenConnection(V.Local.sDSN,V.Global.sDBuser,V.Global.DBpass)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+	F.Intrinsic.Control.Case("15790")
+		'remame script button to Finish Bale
+		F.Intrinsic.Variable.SetProperty("000048","BC",V.Color.Yellow)
+		V.Passed.000048.Set("Finish Bale")
+		F.Intrinsic.Control.End
+	F.Intrinsic.Control.Case("15832")
+		'Update Jobs GUI hook
+		Function.Intrinsic.Control.CallSub(Readjob)
+	F.Intrinsic.Control.CaseElse
+		F.Intrinsic.Control.CallSub(Ss_form1_unload)
+F.Intrinsic.Control.EndSelect
+		
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Main_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Main.End
+
+program.sub.ss_form1_unload.start
+F.Intrinsic.Control.SetErrorHandler("ss_form1_unload_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!conX.Close
+F.Intrinsic.Control.End
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("ss_form1_unload_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.ss_form1_unload.end
+
+program.sub.cmdprocess_click.start
+F.Intrinsic.Control.SetErrorHandler("cmdprocess_click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sParam.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sFileString.Declare(String)
+V.Local.sVal.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.fGWeight.Declare(Float)
+V.Local.fQty.Declare(Float)
+V.Local.fLot.Declare(Float)
+V.Local.bEx.Declare(Boolean)
+V.Local.sCostMethod.Declare(String)
+V.Local.sCloseFlag.Declare(String)
+V.Local.iHdl.Declare(Long)
+V.Local.bNum.Declare(Boolean)
+V.Local.sTxt.Declare(String)
+
+F.Intrinsic.Control.If(v.Screen.SS_Form1!txtGrossWeight.Text.Trim,=,"")
+	Gui.SS_Form1.txtGrossWeight.SetFocus
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+V.Local.sTxt.Set(V.Screen.SS_Form1!txtGrossWeight.Text)
+F.Intrinsic.Math.IsNumeric(V.Local.sTxt,V.Local.bNum)
+F.Intrinsic.Control.If(V.Local.bNum,<>,True)
+	F.Intrinsic.UI.Msgbox("Please enter a numeric value","Unable to Process")
+	Gui.SS_Form1.txtGrossWeight.Text("")
+	Gui.SS_Form1.txtGrossWeight.SetFocus
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+'make sure they entered something numeric.
+V.local.fGWeight.Set(V.Screen.SS_Form1!txtGrossWeight.Text)
+
+'subtract to get our qty which is our wip qty
+F.Intrinsic.Math.Sub(V.Local.fGWeight,V.global.fTareWeight,V.Local.fQty)
+Function.Intrinsic.Control.If(V.Local.fQty,<=,0)
+	F.Intrinsic.Debug.SetLA("Quantity is less than zero. QTY=",V.Local.fQty,"    Gross = ",V.Local.fGWeight,"   Tare = ",V.global.fTareWeight)
+'	F.Intrinsic.UI.CloseWaitDialog
+	F.Intrinsic.UI.Msgbox("Quantity not > than 0","Qty Zero or Less")
+'	Gui.SS_Form1..AlwaysOnTop(True)
+'	Gui.SS_Form1..Enabled(True)
+'	F.Intrinsic.UI.CloseWaitDialog
+'	Gui.SS_Form1..Visible(True)
+	Gui.SS_Form1.txtGrossWeight.Text("")
+	Gui.SS_Form1.txtGrossWeight.setfocus
+	F.Intrinsic.Control.ExitSub
+Function.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.If(V.Local.fQty,>,1500)
+	F.Intrinsic.UI.Msgbox("Weight > 1500 lbs","Qty Exceeds Max")
+	Gui.SS_Form1.txtGrossWeight.Text("")
+	Gui.SS_Form1.txtGrossWeight.SetFocus
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+Gui.SS_Form1..Enabled(False)
+Gui.SS_Form1..AlwaysOnTop(False)
+'evertime we call this sub clear out our udt elements
+V.uGlobal.uPrevLabel.Redim(-1,-1)
+V.Global.bReprint.Set(False)
+F.Intrinsic.UI.InvokeWaitDialog("Processing WIP to FG...")
+
+'get our last lot number and figure out our next lot number if already been used
+F.Intrinsic.Control.CallSub(Next_lot)
+V.Local.fLot.Set(V.Args.fLot)
+F.Intrinsic.Control.CallSub(Read_option,"fWIPQty",V.Local.fQty)
+'returned our cost method and our close flage, meaning is this thing partial or not?
+V.Local.sCostMethod.Set(V.Args.CostMEthod.Trim)
+V.Local.sCloseFlag.Set(V.Args.CloseFlag.Trim)
+'
+'
+'
+
+F.Intrinsic.String.Build("{0}\WIPFG{1}",V.Caller.FilesDir,V.Caller.Terminal,V.Caller.CompanyCode,V.Local.sFile)
+'Build our file string for our text file, tab delimited.
+F.Intrinsic.String.Build("{1}{0}{5}{0}{0}{0}{2}{0}{0}{0}{3}{0}{4}",V.Ambient.Tab,V.Local.fLot.Trim,V.Local.fQty,V.global.fTareWeight,V.local.fGWeight,"PROD",V.Local.sFileString)
+'file exists?
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bEx)
+F.Intrinsic.Control.If(V.Local.bEx,=,True)
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sFileString)
+
+'callwrapper documentation
+'http://gabforums.globalshopsolutions.com/topic.asp?TOPIC_ID=5422&SearchTerms=2003
+'print label flags is turned off. we are printing our own label.
+F.Intrinsic.String.Build("{0}!*!{1}!*!{2}!*!{3}!*!!*!!*!!*!!*!!*!!*!{4}!*!{5}!*!!*!!*!!*!{9}!*!!*!{6}!*!!*!!*!N!*!{8}!*!Y!*!!*!{7}",V.Caller.CompanyCode,V.Caller.Terminal,V.Caller.Caller,"NS",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.fQty,V.local.sFile,V.Local.sCostMethod,V.Local.sCloseFlag,V.local.sParam)
+F.Intrinsic.Debug.SetLa(V.Local.sparam)
+'F.Intrinsic.Debug.CallWrapperDebugEnable
+F.Global.General.CallWrapperSync(2003,V.Local.sParam)
+'read the callwrapper return before going to next
+v.Local.sParam.Set(V.Ambient.CallWrapperReturn)
+F.Intrinsic.Control.If(V.Local.sParam.Trim,<>,"")
+	F.Intrinsic.String.Split(V.Local.sParam.Trim,"*!*",V.Local.sParam)
+
+	'read our 43/44 array element. split it by :: also, give them the error message that the wrapper returns then exit...
+	F.Intrinsic.String.Split(V.Local.sParam(44).Trim,"::",V.Local.sParam)
+	F.Intrinsic.Control.If(V.Local.sParam(1).Trim,<>,"")
+		F.Intrinsic.UI.Msgbox(V.Local.sParam(1).Trim,"WIP To FG Not Complete!")
+		F.Intrinsic.UI.CloseWaitDialog
+	'	Gui.SS_Form1..Visible(True)
+	'	Function.Intrinsic.Control.CallSub(Ss_form1_unload)
+	F.Intrinsic.Control.Else
+		'print our label. Pass our file string variable as it has all the information we need.
+		F.Intrinsic.Control.CallSub(Print_label,"Params",V.Local.sFileString)
+		Gui.SS_Form1.cmdReprint.Enabled(True)
+		F.Intrinsic.String.Build("WIP To FG Success.{0}Work Order : {1}-{2}{0}Gross Weight: {3}",V.Ambient.NewLine,V.Global.sJob,V.Global.sSuffix,V.Local.fGWeight,V.Local.sSQL)
+		F.Intrinsic.UI.InvokeWaitDialog(V.Local.sSQL,"Item Updated!")
+		F.Intrinsic.UI.Sleep(4)
+		F.Intrinsic.UI.CloseWaitDialog
+		'write job detail record and upload into program
+		F.Intrinsic.Control.CallSub(Upl_job_detail,"Reverse",False,"fQty",V.Local.fQty)
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+'F.Intrinsic.Control.CallSub(Ss_form1_unload)
+'F.Intrinsic.API.GetHandleFromPID(V.Ambient.PID,V.Local.iHdl)
+'Gui.SS_Form1..BindTo(V.Local.iHdl,1150,500)
+Gui.SS_Form1..AlwaysOnTop(True)
+'Gui.SS_Form1..Visible(True)
+Gui.SS_Form1..Enabled(True)
+Gui.SS_Form1.txtGrossWeight.Text("")
+Gui.SS_Form1.txtGrossWeight.SetFocus
+
+
+F.Intrinsic.Control.Label("cmdprocess_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.cmdprocess_click.end
+
+program.sub.cmdrlastbale_click.start
+F.Intrinsic.Control.SetErrorHandler("cmdrlastbale_click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.fQty.Declare(Float)
+V.Local.sParam.Declare(String)
+V.Local.sFile.Declare(String)
+V.local.iHdl.Declare(Long)
+
+Gui.SS_Form1..Enabled(False)
+Gui.SS_Form1..AlwaysOnTop(False)
+F.Intrinsic.UI.InvokeWaitDialog("Processing Reversal...","Reverse Last Bale!")
+'here we are going to reverse the last recrod of processed.
+'find the last record that was processed
+F.Intrinsic.String.Build("Select * From V_Job_Detail Where Job = '{0}' And Suffix = '{1}' And LMO = 'L' And Pieces_Compltd > '0' Order By Charge_Date DESC,Sequence_Key DeSC",V.Global.sJob,V.Global.sSuffix.Trim,V.Local.sSQL)
+F.ODBC.Connection!conX.OpenRecordsetRO("rstReverse",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!rstReverse.EOF,<>,True)
+	F.Intrinsic.Math.Mult(V.ODBC.conX!rstReverse.FieldValFloat!Pieces_Compltd,-1,V.Local.fQty)
+	Function.Intrinsic.Control.CallSub(Check_reverse)
+	F.Intrinsic.Control.If(V.Args.ToReverse,=,"NO")
+		F.Intrinsic.UI.Msgbox("Previous Job Detail record to reverse not found for this job.","Previous Job Detail records not found...")
+		F.ODBC.conX!rstReverse.Close
+		F.Intrinsic.UI.CloseWaitDialog
+		Gui.SS_Form1..AlwaysOnTop(True)
+		Gui.SS_Form1..Enabled(True)
+		Gui.SS_Form1.txtGrossWeight.SetFocus
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+'	Gui.SS_Form1..Visible(False)
+	Gui.SS_Form1..AlwaysOnTop(False)
+	F.Intrinsic.Control.CallSub(Upl_job_detail,"Reverse",True,"fQty",V.Local.fQty)
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("Previous Job Detail record to reverse not found for this job.","Previous Job Detail records not found...")
+	F.Intrinsic.UI.CloseWaitDialog
+	Gui.SS_Form1..AlwaysOnTop(True)
+	Gui.SS_Form1..Enabled(True)
+	F.ODBC.conX!rstReverse.Close
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+'
+'F.ODBC.conX!rstReverse.Close
+
+
+F.Intrinsic.String.Build("Select * From Job_Detail Where Job = '{0}' And Suffix = '{1}' And LMO = 'Z' Order By Charge_Date DESC,Sequence_Key DeSC",V.Global.sJob,V.Global.sSuffix.Trim,V.Local.sSQL)
+F.ODBC.Connection!conX.OpenRecordsetRO("rstReverse",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!rstReverse.EOF,<>,True)
+	'call new New callwrapper mode 2004 will be available once Chris recompiles OCTSRS. Mode 2
+	'004hasthesameparametersasmode2003,buthasanadditionalparameterattheendforACTION on last param
+	F.Intrinsic.String.Build("{0}!*!{1}!*!{2}!*!{3}!*!{4}!*!{5}!*!{8}!*!!*!{9}!*!{10}!*!{4}!*!{5}!*!!*!!*!!*!N!*!!*!{6}!*!!*!!*!N!*!!*!Y!*!!*!{7}!*!A",V.Caller.CompanyCode,V.Caller.Terminal,V.Caller.Caller,"NS",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.fQty,V.local.sFile,"999999",V.ODBC.conX!rstReverse.FieldValTrim!Date_Sequence,V.ODBC.conX!rstReverse.FieldValTrim!Sequence_Key,V.local.sParam)
+	F.Intrinsic.Debug.SetLa(V.Local.sparam)
+	V.Local.fQty.Set(V.ODBC.conX!rstReverse.FieldValFloat!Pieces_Compltd)
+	F.Intrinsic.Debug.CallWrapperDebugEnable
+	'F.Intrinsic.Debug.Stop
+	F.Global.General.CallWrapperSync(2004,V.Local.sParam)
+
+	F.Intrinsic.Math.add(V.Global.fTareWeight,V.Local.fqty,V.Local.fQty)
+	F.ODBC.conX!rstReverse.Close
+	F.Intrinsic.String.Build("Reversal Success.{0}Work Order : {1}-{2}{0}Gross Weight:{3}",V.Ambient.NewLine,V.Global.sJob,V.Global.sSuffix,V.Local.fQty,V.Local.sSQL)
+	F.Intrinsic.UI.InvokeWaitDialog(V.Local.sSQL,"Item Reversed!")
+	F.Intrinsic.UI.Sleep(4)
+	F.Intrinsic.UI.CloseWaitDialog
+F.Intrinsic.Control.Endif
+'F.Intrinsic.API.GetHandleFromPID(V.Ambient.PID,V.Local.iHdl)
+'Gui.SS_Form1..BindTo(V.Local.iHdl,1050,500)
+Gui.SS_Form1.cmdReprint.Enabled(False)
+V.uGlobal.uPrevLabel.Redim(-1,-1)
+V.Global.bReprint.Set(False)
+Gui.SS_Form1..AlwaysOnTop(True)
+Gui.SS_Form1..Enabled(True)
+'Gui.SS_Form1..Visible(True)
+Gui.SS_Form1.txtGrossWeight.SetFocus
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdrlastbale_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.cmdrlastbale_click.end
+
+Program.Sub.ReadJob.Start
+F.Intrinsic.Control.SetErrorHandler("ReadJob_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sTemp.Declare(String)
+V.Local.iHdl.Declare(Long)
+
+V.global.sJob.Set(V.Passed.009990)
+V.global.sSuffix.Set(V.Passed.009991)
+
+V.Global.sWC.Set(V.Passed.009996)
+
+'check for the tare weight of the job,
+'thenchecktomakesurethatthejobisnotindirectandtheproductlinehasafgproduct
+'
+
+F.Intrinsic.String.Build("Select Tare_Weight From GCG_WO_Tare_Weight Where Job = '{0}' And Suffix = '{1}'",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.sSQL)
+F.ODBC.Connection!conX.OpenLocalRecordsetRO("Rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,=,False)
+	V.global.fTareWeight.Set(V.ODBC.conX!Rst.FieldValFloat!Tare_Weight)
+F.Intrinsic.Control.Else
+	V.global.fTareWeight.Set(0)
+F.Intrinsic.Control.EndIf
+F.ODBC.conX!Rst.Close
+F.Intrinsic.Debug.SetLA("Tare Weight = ",V.global.fTareWeight)
+
+Function.Intrinsic.String.Build("Select Job,Suffix From V_Ind_Lbr_Accts Where Job = '{0}' And Suffix = '{1}' ",V.global.sJob.Trim,V.global.sSuffix.Trim,V.Local.sSQL)
+F.ODBC.Connection!conX.OpenLocalRecordsetRO("Rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,=,True)
+	'so we know its not an indirect work order
+	F.ODBC.conX!Rst.close
+	Function.Intrinsic.String.Build("Select Product_Line, Part From V_JOB_Header Where Job = '{0}' And Suffix = '{1}' ",V.global.sJob.Trim,V.global.sSuffix.Trim,V.Local.sSQL)
+	F.ODBC.Connection!conX.OpenLocalRecordsetRO("Rst",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,<>,True)
+		F.Intrinsic.String.Build("Job {0}-{1}",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.sTemp)
+		Gui.SS_Form1.lblJobSuffix.Caption(V.Local.sTemp.trim)
+		F.Intrinsic.String.Build("Seq {0}",V.Passed.009992,V.Local.sTemp)
+		Gui.SS_Form1.lblSeq.Caption(V.local.sTemp)
+		Gui.SS_Form1..AlwaysOnTop(True)
+'
+'
+		F.Intrinsic.API.GetHandleFromPID(V.Ambient.PID,V.Local.iHdl)
+		V.Global.sPart.Set(V.ODBC.conX!Rst.FieldValTrim!Part)
+		Gui.SS_Form1..BindTo(V.Local.iHdl,1050,500)
+'		Gui.SS_Form1..BindTo(V.caller.Handle)
+'		F.Intrinsic.UI.Msgbox(V.Caller.Handle)
+'		F.Intrinsic.Control.Do
+'			F.Intrinsic.API.SetWindowPositions(V.local.iHdl,V.Screen.SS_Form1.HWnd,3)
+'			Gui.SS_Form1..BindTo(V.LOCAL.IHDL)
+'		F.Intrinsic.Control.Loop
+		Gui.SS_Form1.cmdReprint.Enabled(False)
+		Gui.SS_Form1..Show
+		Gui.SS_Form1.txtGrossWeight.SetFocus
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Control.CallSub(Ss_form1_unload)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.conX!Rst.Close
+F.Intrinsic.Control.Else
+	F.ODBC.conX!Rst.close
+	'its an indirect work order
+	F.Intrinsic.Debug.SetLA("Work Order Combination found in the IND_Labor_Accts table, Indirect work order")
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("ReadJob_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.ReadJob.End
+
+Program.Sub.Next_Lot.Start
+F.Intrinsic.Control.SetErrorHandler("Next_Lot_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.fLot.Declare(Float)
+V.Local.bExt.Declare(Boolean)
+
+'grab our next lot number from custom table.
+F.Intrinsic.String.Build("Select Next_Lot_Num From GCG_WC_Lot_Maint Where Workcenter = '{0}'",V.Global.sWC.Trim,V.Local.sSQL)
+F.ODBC.Connection!conX.OpenLocalRecordsetRW("Rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,<>,True)
+	V.Local.fLot.Set(V.ODBC.conX!Rst.FieldValFloat!Next_Lot_Num)
+	F.Intrinsic.Math.Add(V.Local.fLot.Trim,1,V.Local.fLot)
+	F.ODBC.conX!Rst.Set!Next_Lot_Num(V.Local.fLot)
+	F.ODBC.conX!Rst.Update
+F.Intrinsic.Control.Else
+	V.Local.fLot.Set(1)
+F.Intrinsic.Control.EndIf
+F.ODBC.conX!Rst.Close
+
+'figure out if it's already been used.
+F.Intrinsic.Control.DoUntil(V.Local.bExt,=,True)
+	F.Intrinsic.String.Build("Select Part, Lot From V_Item_Master Where Lot = '{0}' And  Part = '{1}'",V.Local.fLot,V.Global.sPart.Trim,V.Local.sSQL)
+	F.ODBC.Connection!conX.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+	F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,<>,True)
+		F.Intrinsic.Math.Add(V.Local.fLot,1,V.Local.fLot)
+	F.Intrinsic.Control.Else
+		V.Local.bExt.Set(True)
+	F.Intrinsic.Control.EndIf
+	F.ODBC.conX!Rst.Close
+F.Intrinsic.Control.Loop
+
+'add rv for cmdprocess
+F.Intrinsic.Variable.AddRV("fLot",V.Local.fLot)
+'since we are using the above lot in this run, lets add 1 more to it
+'F.Intrinsic.Math.Add(V.Local.fLot,1,V.Local.fLot)
+
+'update/insert our other custom table for the new lot number
+F.Intrinsic.String.Build("Select * From GCG_WC_Lot_Maint Where Workcenter = '{0}'",V.Global.sWC.Trim,V.Local.ssql)
+F.ODBC.Connection!conX.OpenLocalRecordsetRW("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,=,True)
+	F.ODBC.conX!Rst.AddNew
+	F.ODBC.conX!Rst.Set!Workcenter(V.Global.sWC.Trim)
+F.Intrinsic.Control.EndIf
+F.ODBC.conX!Rst.Set!Next_Lot_Num(V.Local.fLot)
+F.ODBC.conX!Rst.Update
+F.ODBC.conX!Rst.Close
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Next_Lot_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Next_Lot.End
+
+Program.Sub.UPL_Job_Detail.Start
+F.Intrinsic.Control.SetErrorHandler("UPL_Job_Detail_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+'write a job detail file and hit the upload. Probably going to need more values, but were not specified within Quote 5971. so not sure what needs to go into record. Passing mandatory values, and employee name/number.
+V.Local.sEmp.Declare(String)
+V.Local.sEmpName.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sString.Declare(String)
+V.Local.sSeq.Declare(String)
+V.Local.sDate.Declare(String)
+V.Local.bEx.Declare(Boolean)
+V.Local.fGoodQty.Declare(String)
+
+F.Intrinsic.Control.If(V.args.reverse,=,False)
+	V.Local.sEmp.set(V.Passed.009993)
+	V.Local.sEmpName.set(V.Passed.009994)
+	V.Local.sSeq.Set(V.Passed.009992)
+F.Intrinsic.Control.Else
+	'we have to read our recordset values from our global recordset reverse
+	V.Local.sEmp.Set(V.ODBC.conX!rstReverse.FieldValTrim!Empl)
+	V.Local.sEmpName.Set(V.ODBC.conX!rstReverse.FieldValTrim!Employee)
+	V.Local.sSeq.Set(V.ODBC.conX!RstReverse.FieldValTrim!Seq)
+	F.ODBC.conX!rstReverse.close
+F.Intrinsic.Control.EndIf
+
+'F.Intrinsic.String.Build("{0}\JOBDETL.TXT",v.Caller.FilesDir,v.Local.sFile)
+F.Intrinsic.String.Build("{0}\{1}{2}MOPEN.TXT",V.Caller.FilesDir,V.Caller.CompanyCode,V.Caller.Terminal,V.Local.sFile)
+'tab delimited
+F.Intrinsic.String.Format(V.Ambient.Date,"MMDDYY",V.Local.sDate)
+'Tab
+'1 Date
+'2 Emp
+'3 Job
+'4 Suffix
+'5 Seq
+'6 Workcenter
+'7 Hours
+'8 CLosed
+'9 Indirect
+'10 Start Time
+'1 Finish Time
+' 12Rate Ty
+'13GoodPie
+'14 scarp
+'15 scrap code.
+'have to multiply our qty by 10000
+F.Intrinsic.Math.Mult(V.Args.fQty,10000,V.Local.fGoodQty)
+
+
+F.Intrinsic.String.Build("{1}{0}{2}{0}{3}{0}{4}{0}{5}{0}{6}{0}{7}{0}{8}{0}{9}{0}{10}",V.Ambient.Tab,V.Local.sDate,V.Local.sEmp,V.Global.sJob,V.Global.sSuffix,V.Local.sSeq,V.global.sWC,"0","N","D"," ",V.local.sString)
+F.Intrinsic.String.Build("{6}{0}{1}{0}{2}{0}{3}{0}{4}{0}{5}",V.Ambient.Tab,"","L",V.local.fGoodQty,"0","0",V.Local.sString,V.Local.sString)
+
+
+
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bEx)
+Function.Intrinsic.Control.If(V.Local.bEx,=,True)
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+F.Intrinsic.Control.EndIf
+
+Function.Intrinsic.Debug.SetLA("Params for Upload Mopen.TXT:  ",V.Local.sString)
+
+F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sString)
+
+'F.Global.General.CallWrapperSync(50,"UPLJOBDT/A")
+
+F.Intrinsic.String.Concat(V.Ambient.DblQuote,V.Caller.CompanyCode,V.Caller.Terminal,"MOPEN.txt",V.Ambient.DblQuote,V.Local.sFile)
+F.Intrinsic.Task.LaunchGSSSync("JB0455","-C",V.Local.sFile)
+
+
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("UPL_Job_Detail_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	Function.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.UPL_Job_Detail.End
+
+Program.Sub.Check_Reverse.Start
+F.Intrinsic.Control.SetErrorHandler("Check_Reverse_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sSQL.Declare(String)
+V.Local.sRet.Declare(String)
+
+Function.Intrinsic.String.Build("Select Sum(Pieces_Compltd)As Qty_Left From V_JOB_DETAIL Where Job = '{0}' And Suffix = '{1}' And LMO = 'L'",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.sSQL)
+'F.Intrinsic.String.Build("Select * From V_Job_Detail Where Job = '{0}' And Suffix = '{1}' And LMO = 'L' And Pieces_Compltd* -1 = '{2}' And Sequence_Key = ' Order By Charge_Date DESC,Sequence_Key DeSC",V.Global.sJob,V.Global.sSuffix.Trim,v.ODBC.conX!rstReverse.FieldValFloat!Pieces_Compltd,v.Local.sSQL)
+F.ODBC.Connection!conX.OpenLocalRecordsetRO("rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!rst.FieldValFloat!Qty_Left,<=,0)
+	F.Intrinsic.Debug.SetLA("A reversal of ",V.ODBC.conX!rstReverse.FieldValFloat!Pieces_Compltd," pieces can't be done. No positive left to reverse. Exiting process.")
+	F.Intrinsic.Variable.AddRV("ToReverse","NO")
+F.Intrinsic.Control.Else
+	F.Intrinsic.Debug.SetLA("We can reverse a positive record has been found.")
+	F.Intrinsic.Variable.AddRV("ToREVERSE","YES")
+F.Intrinsic.Control.EndIf
+F.ODBC.conX!rst.Close
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Check_Reverse_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+Program.Sub.Check_Reverse.End
+
+Program.Sub.Leave_Job.Start
+'F.Intrinsic.Control.SetErrorHandler("Leave_Job_Err")
+'F.Intrinsic.Control.ClearErrors
+'
+'V.Local.sError.Declare(String)
+'V.Local.sRow.Declare(String)
+'V.Local.sRet.Declare(String)
+'V.Local.iC.Declare(Long)
+'V.Local.iRows.Declare(Long)
+'V.Local.sSeq.Declare(String)
+'V.Local.sJobSuff.Declare(String)
+'V.Local.sTemp.Declare(String)
+'V.Local.iR.Declare(Long)
+'
+'
+'
+'
+'V.Local.sSeq.Set(V.Passed.009992)
+'
+''concat job and suffix together for bdf loop
+'F.Intrinsic.Control.If(V.Global.sSuffix.Trim,<>,"")
+'	F.Intrinsic.String.Build("{0}-{1}",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.sJobSuff)
+'F.Intrinsic.Control.Else
+'	V.Local.sJobSuff.Set(V.Global.sJob.Trim)
+'F.Intrinsic.Control.EndIf
+'
+'
+''they have leave checked
+''we have to read the bdf and try to remove the job from the bdf if we can't do that then we are f###
+'F.Intrinsic.BDF.Load("AUX001","AUX001")
+'F.Intrinsic.BDF.ReadRowCount("AUX001",V.Local.iRows)
+'F.Intrinsic.BDF.Clone("AUX001","CLONE")
+''always have to go 1 less.
+'F.Intrinsic.Math.Sub(V.Local.iRows,1,V.Local.iRows)
+'
+'F.Intrinsic.Control.For(V.Local.iC,0,V.Local.iRows,1)
+'	F.Intrinsic.BDF.ReadRow("AUX001",V.Local.iC,V.Local.sRow)
+'	F.Intrinsic.Control.If(V.Local.sRow.Trim,<>,"")
+'		F.Intrinsic.String.Split(V.Local.sRow,"|~|",V.Local.sRow)
+'		F.Intrinsic.Control.If(V.Local.sJobSuff.Trim,=,V.Local.sRow(0))
+'			F.Intrinsic.Control.If(V.Local.sRow(1),=,V.Local.sSeq)
+'				'we know we have to remove that job from the bdf......
+'				F.Intrinsic.Control.For(V.Local.iR,0,V.Local.sRow.UBound,1)
+'					V.local.sRow(v.Local.iR).Set("")
+'				F.Intrinsic.Control.Next(V.Local.iR)
+'			F.Intrinsic.Control.EndIf
+'		F.Intrinsic.Control.EndIf
+'	F.Intrinsic.Control.Endif
+'	'either we split the thing up, so if we hit the above the split up array will all be blank, join that and come on back
+'	F.Intrinsic.String.Join(V.Local.sRow,"|~|",V.Local.sRow)
+'	f.Intrinsic.BDF.WriteRow("CLONE",V.Local.sRow)
+'F.Intrinsic.Control.Next(V.Local.iC)
+'F.Intrinsic.BDF.Save("CLONE","AUX001")
+'
+'
+'
+'
+'
+'
+'
+'F.Intrinsic.Control.ExitSub
+'
+'F.Intrinsic.Control.Label("Leave_Job_Err")
+'F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+'	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+'	F.Intrinsic.UI.Msgbox(V.Local.sError)
+'	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+'Function.Intrinsic.Control.EndIf
+'
+
+Program.Sub.Leave_Job.End
+
+Program.Sub.Read_Option.Start
+F.Intrinsic.Control.SetErrorHandler("Read_Option_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.iRet.Declare(Long)
+V.local.sSQL.Declare(String)
+V.Local.sVal.Declare(String)
+V.Local.sCloseFlag.Declare(String)
+V.Local.fWIPQty.Declare(Float)
+V.Local.fRemQty.Declare(Float)
+
+'our wip to fg qty that we are doing.
+V.Local.fWIPQty.Set(V.Args.fWipQty)
+
+'read the company option for cost to use with partials, and return it to them.
+'option id is 401163, long
+'option id from selected dropwdown item index-- option that cost method needs to be apssed as.
+'1 Price
+'2 Estimate
+'3 inventory
+'4 Actual
+'5 Remaining
+'6 Alt Cost
+
+'figure out if we are closing the job or not.
+F.Intrinsic.String.Build("Select Qty_Order, Qty_Completed From V_JOB_HEader Where JOb = '{0}' ANd Suffix = '{1}' ",V.Global.sJob.Trim,V.Global.sSuffix.Trim,V.Local.sSQL)
+F.ODBC.Connection!conX.OpenLocalRecordsetRO("Rst",V.Local.sSQL)
+F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,=,False)
+	F.Intrinsic.Math.Sub(V.ODBC.conX!Rst.FieldValFloat!Qty_Order,V.ODBC.conX!Rst.FieldValFloat!Qty_Completed,V.Local.fRemQty)
+	F.Intrinsic.Math.Sub(V.Local.fRemQty,V.Local.fWIPQty,V.Local.fRemQty)
+	F.Intrinsic.Control.If(V.local.fRemQty,<=,0)
+'Changed from Y to N so the Job will not close....SKT....1/9/2015
+'They did not want to close the Job after going live and using the project
+		V.Local.sCloseFlag.Set("N")
+	F.Intrinsic.Control.Else
+		V.Local.sCloseFlag.Set("N")
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.Else
+	V.Local.sCloseFlag.Set("N")
+F.Intrinsic.Control.EndIf
+
+F.ODBC.conX!Rst.Close
+
+'F.Global.General.ReadOption(401163,3,4,0000,V.Local.sRet)
+'F.Global.General.ReadOption(V.Local.iiD,V.Local.iDataType,V.Local.iDefault,V.Local.sRet)
+F.ODBC.Connection!conX.OpenLocalRecordsetRO("Rst","Select F_Long From V_Op_Header Where ID = '401163' And Sequence = '0000'")
+F.Intrinsic.Control.If(V.ODBC.conX!Rst.EOF,<>,True)
+	V.Local.iRet.Set(V.ODBC.conX!Rst.FieldValFloat!F_Long)
+F.Intrinsic.Control.Else
+	F.Intrinsic.Debug.SetLA("Option ID Not Found in Op Header.")
+	'default to actual which is 4
+	V.Local.iRet.Set(4)
+F.Intrinsic.Control.EndIf
+F.ODBC.conX!Rst.close
+F.Intrinsic.Debug.SetLA("Option Long Returned: ",V.Local.iRet)
+
+F.Intrinsic.Control.SelectCase(V.Local.iRet)
+	F.Intrinsic.Control.Case(1)
+		V.Local.sVal.Set("P")
+	F.Intrinsic.Control.Case(2)
+		V.Local.sVal.Set("E")
+	F.Intrinsic.Control.Case(3)
+		V.Local.sVal.Set("I")
+	F.Intrinsic.Control.Case(4)
+		V.Local.sVal.Set("A")
+	F.Intrinsic.Control.Case(5)
+		V.Local.sVal.Set("R")
+	F.Intrinsic.Control.Case(6)
+		V.Local.sVal.Set("L")
+	F.Intrinsic.Control.CaseElse
+		F.Intrinsic.Debug.SetLA("Case Else was hit we are defaulting.")
+		V.Local.sVal.Set("A")
+F.Intrinsic.Control.EndSelect
+
+F.Intrinsic.Debug.SetLA("Cost Method: ",V.Local.sVal,V.Ambient.NewLine,"Close Flag",V.Local.sCloseFlag)
+F.Intrinsic.Variable.AddRV("CostMethod",V.Local.sVal)
+F.Intrinsic.Variable.AddRV("CloseFlag",V.Local.sCloseFlag)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Read_Option_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Read_Option.End
+
+program.sub.txtgrossweight_keypressenter.start
+F.Intrinsic.Control.SetErrorHandler("txtgrossweight_keypressenter_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Control.CallSub(Cmdprocess_click)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("txtgrossweight_keypressenter_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.txtgrossweight_keypressenter.end
+
+Program.Sub.Print_Label.Start
+F.Intrinsic.Control.SetErrorHandler("Print_Label_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sT.Declare(String)
+V.Local.iRptID.Declare(Long)
+V.Local.iBILogID.Declare(String)
+V.Local.iBIRunID.Declare(Long)
+V.Local.sLabelName.Declare(String)
+V.Local.sDefaultPrinter.Declare(String)
+V.Local.sRet.Declare(String)
+V.Local.sParams.Declare(String)
+V.Local.sValues.Declare(String)
+V.Local.sFileString.Declare(String)
+V.Local.fQtyKgs.Declare(Float)
+V.Local.sString.Declare(String)
+V.Local.bFound.Declare(Boolean,False)
+V.Local.iLabelQty.Declare(Long)
+
+
+
+
+
+V.Local.iRptID.Set("1835")
+
+'F.ODBC.Connection!conC.OpenConnection(V.Ambient.Ccon,V.Ambient.cUser,V.Ambient.Cpass)
+'***************************************************************************************************************************************
+'**   Note that SERVERNAME is hard coded here and must be changed if this script is used in another server environment  **
+'***************************************************************************************************************************************
+F.ODBC.Connection!conC.OpenConnection("driver={Pervasive ODBC Client Interface};DBQ=GlobalCommon;SERVERNAME=ISW701","","")'
+
+F.Intrinsic.String.Split("Part*!*Lot*!*Qty_ON_Label*!*QTY_On_Label_KG*!*WO*!*LBL_Create_Date","*!*",V.Local.sParams)
+'
+v.Local.sDefaultPrinter.Set(Variable.Printer.DefaultPrinter)
+
+F.Intrinsic.Debug.SetLA("Default Printer",V.Local.sDefaultPrinter)
+'got to grab a bit more information from the server printer tables global common
+F.ODBC.Connection!conC.OpenLocalRecordsetRO("rstPRint","Select * From Server_Printers Where SentinelEnabled = '1'")
+F.Intrinsic.Control.DoUntil(V.ODBC.conC!rstPrint.EOF,=,True)
+	F.Intrinsic.String.IsInString(V.ODBC.conC!rstPRint.FieldValTrim!PrinterName,V.Local.sDefaultPrinter,"True",V.Local.bFound)
+	F.Intrinsic.Control.If(V.Local.bFound,=,True)
+		'need to update our default printer we are passing to the label package with the printername with ip
+		V.Local.sDefaultPrinter.Set(V.ODBC.conC!rstPRint.FieldValTrim!PrinterName)
+		F.Intrinsic.Debug.SetLA("Found our full printer  ",V.Local.sDefaultPrinter)
+		F.Intrinsic.Control.ExitDo
+	F.Intrinsic.Control.EndIf
+	F.ODBC.conC!rstPRint.MoveNext
+F.Intrinsic.Control.Loop
+F.ODBC.conC!rstPRint.Close
+F.ODBC.Connection!conC.close
+F.Intrinsic.Control.If(V.Local.bFound,=,False)
+	F.Intrinsic.String.Build("Default Printer {0} not found as an active and usable printer for Sentinel.{1} Label will not be printed!",V.Local.sDefaultPrinter,V.Ambient.NewLine,V.Local.sT)
+	F.Intrinsic.UI.Msgbox(V.Local.sT,"Default Printer Not Found!")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Debug.SetLA("Printer set to this: ",V.Local.sDefaultPrinter.Trim)
+
+'V.Local.sLabelName.Set("BFry_SF_Wip_FG_1835.lab")
+'first get our report id from the label name. Case BOolean of True to ignore the case
+'F.Global.BI.GetIDFromName(V.Local.sLabelName.Trim,True,V.Local.iRptID)
+'F.Intrinsic.Control.If(V.Local.iRptID,=,-1)
+'	F.Intrinsic.string.Concat("Active WIP Label : ",V.Local.sLabelName.Trim," not found.",V.Ambient.NewLine,"WIP To FG Label will not be printed",V.Local.sT)
+'	F.Intrinsic.UI.Msgbox(V.Local.sT,"Label not Active!")
+'	F.Intrinsic.Control.ExitSub
+'F.Intrinsic.Control.EndIf
+'if reprint is false we are getting information passed to us and we are making our new label value.
+'storing our last printed information into our udt.
+F.Intrinsic.Control.If(V.Global.bReprint,=,False)
+	V.Local.sFileString.Set(V.Args.Params)
+	F.Intrinsic.String.Split(V.Local.sFileString,V.Ambient.Tab,V.Local.sFileString)
+	'0: Lot
+	'4: Quantity (Net lbs)
+	'7: Gross Weight
+	'8: Tare Weight
+	'get qty in kgsQty (Net Kgs - we are using a factor of 2.2046 for conversion and rounding up to a single decimal place)
+	F.Intrinsic.Math.DIV(V.Local.sFileString(4).Float,2.2046,V.Local.fQtyKgs)
+	F.Intrinsic.Math.Round(V.Local.fQtyKgs,1,V.Local.fQtyKgs)
+	'temp concat the job together for the job params.
+	
+
+	F.Intrinsic.String.Build("{0}{1}",V.Global.sJob,V.Global.sSuffix,V.Local.sT)
+	F.Intrinsic.String.Build("{0}*!*{1}*!*{2}*!*{3}*!*{4}*!*{5}",V.Global.sPart.Trim,V.Local.sFileString(0).Trim,V.Local.sFileString(4).Float,V.Local.fQtyKgs,V.Local.sT.Trim,V.Ambient.Date,V.Local.sValues)
+	F.Intrinsic.Variable.LoadUDTFromString(V.uGlobal.uPrevLabel,"Part*!*Lot*!*Qty_On_Label*!*Qty_On_label_KG*!*WO*!*LBL_Create_Date",V.Local.sValues,V.Ambient.NewLine,"*!*",False)
+	V.Local.iLabelQty.Set(2)
+F.Intrinsic.Control.Else
+	'when reprinting we only want 1 copy of the label instead of the stnadard 2
+	V.Local.iLabelQty.Set(1)
+	f.Intrinsic.Variable.UDTToString(v.uGlobal.uPrevLabel,"Part*!*Lot*!*Qty_On_Label*!*Qty_On_label_KG*!*WO*!*LBL_CREATE_DATE",v.Ambient.NewLine,"*!*",v.Local.sValues)
+F.Intrinsic.Control.Endif
+	
+F.Intrinsic.String.Split(V.Local.sValues,"*!*",V.Local.sValues)
+
+'
+'F.Intrinsic.Debug.SetLA("Default Printer: ",v.Printer.DefaultPrinter)
+
+'F.Global.BI.PrintCodeSoftLabel(v.Local.iRptID,v.Local.sParams,v.Local.sValues,False,v.Printer.DefaultPrinter,1)
+F.Global.BI.PrintCodeSoftLabel(V.Local.iRptID,V.Local.sParams,V.Local.sValues,False,V.Local.sDefaultPrinter,V.Local.iLabelQty)
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Print_Label_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+
+Program.Sub.Print_Label.End
+
+program.sub.cmdreprint_click.start
+F.Intrinsic.Control.SetErrorHandler("cmdreprint_click_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Control.If(V.uGlobal.uPrevLabel.UBound,<>,-1)
+	V.Global.bReprint.Set(True)
+	F.Intrinsic.UI.InvokeWaitDialog("Reprinting previous label...","Reprint 1 Label")
+	F.Intrinsic.Control.CallSub(Print_label)
+	F.Intrinsic.UI.CloseWaitDialog
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("No Prev. Label information to reprint.","Reprint not Possible")
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("cmdreprint_click_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+Function.Intrinsic.Control.EndIf
+
+program.sub.cmdreprint_click.end
+
+program.sub.txtgrossweight_change.start
+F.Intrinsic.Control.SetErrorHandler("txtgrossweight_change_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.bTxt.Declare(Boolean)
+V.Local.bNum.Declare(Boolean)
+V.Local.sTxField.Declare(String)
+
+'Used for a change event.
+V.Local.sTxField.Set(V.Screen.SS_Form1!txtGrossWeight.Text)
+F.Intrinsic.String.IsInString(V.Local.sTxField,"%",True,V.Local.bTxt)
+F.Intrinsic.Control.If(V.Local.bTxt,=,True)
+	F.Intrinsic.UI.Msgbox("Closing Finish Bale window","Closing")
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.String.IsInString(V.Local.sTxField,"$",True,V.Local.bTxt)
+F.Intrinsic.Control.If(V.Local.bTxt,=,True)
+	F.Intrinsic.UI.Msgbox("Closing Finish Bale window","Closing")
+	F.Intrinsic.Control.CallSub(Ss_form1_unload)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Math.IsNumeric(V.Local.sTxField,V.Local.bNum)
+F.Intrinsic.Control.If(V.Local.bNum,=,False)
+	F.Intrinsic.Control.ExitSub
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("txtgrossweight_change_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: GCG_Update_Jobs_WIP.gas",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+Function.Intrinsic.Control.EndIf
+
+
+program.sub.txtgrossweight_change.end
+
+
